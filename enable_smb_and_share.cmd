@@ -34,8 +34,13 @@ if "%driveLetter%"=="" (
 
 set "folderPath=%driveLetter%"
 
-:: Restart the Server service to ensure environment consistency
-echo Checking and restarting SMB services...
+:: --- ENABLING SMB 1.0/CIFS SUPPORT ---
+echo Enabling SMB 1.0/CIFS File Sharing Support...
+:: Enabling the parent feature and all sub-features (Client and Server)
+dism /online /enable-feature /featurename:SMB1Protocol /all /norestart
+
+:: Restart the Server service to apply changes
+echo Restarting SMB services...
 net stop "lanmanserver" /y >nul 2>&1
 net start "lanmanserver" >nul 2>&1
 
@@ -52,9 +57,6 @@ if not exist "%fullPath%" (
 )
 
 :: 2. Set NTFS permissions (Everyone: Full Control)
-:: (OI) - Object Inherit (files)
-:: (CI) - Container Inherit (subfolders)
-:: F - Full Control
 echo Setting NTFS disk permissions (Everyone: Full Control)...
 icacls "%fullPath%" /grant Everyone:(OI)(CI)F /t /q
 
@@ -70,6 +72,7 @@ if %errorlevel% equ 0 (
     echo Local Path:  %fullPath%
     echo Network Path: \\%COMPUTERNAME%\%shareName%
     echo Permissions: Everyone has been granted Read/Write/Modify access.
+    echo SMB 1.0: Enabled.
 ) else (
     echo [ERROR] Sharing failed. Please check if the share name is already in use.
 )
