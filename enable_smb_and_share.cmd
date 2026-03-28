@@ -11,13 +11,13 @@ if %errorlevel% neq 0 (
 
 :: List all available drives (C, D, E, etc.)
 echo Available drives:
-wmic logicaldisk get name
 
-:: Create a list for available drives
+:: [修复 1] 使用 findstr 过滤空行，并截取前两位消除不可见的回车符
 set counter=1
-for /f "skip=1 tokens=1" %%a in ('wmic logicaldisk get name') do (
-    set drive[%counter%]=%%a
-    echo !counter!. %%a
+for /f "tokens=1" %%a in ('wmic logicaldisk get name ^| findstr ":"') do (
+    set "rawDrive=%%a"
+    set "drive[!counter!]=!rawDrive:~0,2!"
+    echo !counter!. !rawDrive:~0,2!
     set /a counter+=1
 )
 
@@ -25,32 +25,30 @@ for /f "skip=1 tokens=1" %%a in ('wmic logicaldisk get name') do (
 set /p driveChoice=Enter the number of the drive you want to share (1, 2, 3, etc.): 
 
 :: Check if the user input is valid
-set driveLetter=!drive[%driveChoice%]!
+set "driveLetter=!drive[%driveChoice%]!"
 if "%driveLetter%"=="" (
     echo Invalid choice. Exiting...
     pause
     exit /b
 )
 
-:: Construct the full path to the selected drive
-set folderPath=%driveLetter%\
+:: [修复 2] 移除末尾的斜杠，防止后续拼接出现双斜杠 (如 C:\\)
+set "folderPath=%driveLetter%"
 
-:: Check if the selected drive exists
-if not exist "%folderPath%" (
-    echo Error: The specified path does not exist: %folderPath%
+:: Check if the selected drive exists (Check the root directory)
+if not exist "%folderPath%\" (
+    echo Error: The specified drive does not exist: %folderPath%
     pause
     exit /b
 )
 
-:: Enable SMB protocol (SMB1 and SMB2 for compatibility)
-echo Enabling SMB protocol...
-dism /online /enable-feature /featurename:FS-SMB1 /all /norestart
-dism /online /enable-feature /featurename:FS-SMB2 /all /norestart
-net stop "lanmanserver"
-net start "lanmanserver"
+:: [修复 3 & 4] 移除了危险的 SMB1 和无效的 SMB2 DISM 命令，并为 net stop 添加 /y 防止脚本卡住
+echo Restarting SMB Service to apply potential state changes...
+net stop "lanmanserver" /y >nul 2>&1
+net start "lanmanserver" >nul 2>&1
 
 :: Prompt the user to enter the name for the shared folder
-echo Please enter a name for the shared folder (e.g., "Shared_Folder"):
+echo Please enter a name for the shared folder (e.g., Shared_Folder):
 set /p shareName=Share Name: 
 
 :: Create the shared folder (if it doesn't exist)
@@ -60,10 +58,16 @@ if not exist "%folderPath%\%shareName%" (
 )
 
 :: Create the network share with the specified folder path and name
+:: 使用标准的 "共享名=绝对路径" 格式
 echo Sharing the folder...
-net share "%shareName%"="%folderPath%\%shareName%" /GRANT:everyone,FULL
+net share "%shareName%=%folderPath%\%shareName%" /GRANT:everyone,FULL
 
 :: Confirmation that the folder has been shared
-echo Finished! The folder "%folderPath%\%shareName%" is now shared as "%shareName%".
+if %errorlevel% equ 0 (
+    echo Finished! The folder "%folderPath%\%shareName%" is now shared as "%shareName%".
+) else (
+    echo Failed to share the folder. Please check your system settings.
+)
+
 pause
 ENDLOCAL
