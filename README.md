@@ -1,11 +1,18 @@
 🚀 光速分享 (Light-Help)
 帮助观众远程完成一些复杂的 PC 操作
 
+
+光速分享视频：iPhone照片视频无线传输到Windows无需任何软件|（帮助项目，观看用户专用）
+
+请订阅光速分享
+我会持续为大家带来更方便更好的科技视频
+https://www.youtube.com/@光速分享
+
 💻 快速开始 windows+X
 在 PowerShell 管理员模式中运行以下命令：
 
 ```powershell
-iwr -useb [https://raw.githubusercontent.com/Cotton059/Light-Help/main/enable_smb_and_share.ps1](https://raw.githubusercontent.com/Cotton059/Light-Help/main/enable_smb_and_share.ps1) | iex
+iwr -useb https://raw.githubusercontent.com/Cotton059/Light-Help/main/enable_smb_and_share.ps1 | iex
 ```
 
 📝 使用说明
@@ -17,3 +24,4 @@ iwr -useb [https://raw.githubusercontent.com/Cotton059/Light-Help/main/enable_sm
 
 ⚠️ 重要提示
 重启电脑：如果是第一次开启 SMB 服务，请在操作完成后重启电脑，以确保服务完全生效。
+
