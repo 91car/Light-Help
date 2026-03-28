@@ -1,18 +1,17 @@
 @echo off
 SETLOCAL ENABLEDELAYEDEXPANSION
 
-:: Check if the script is running as Administrator
+:: 检查管理员权限
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo Please run this script as Administrator.
+    echo [ERROR] 请以管理员身份运行此脚本。
     pause
     exit /b
 )
 
-:: List all available drives (C, D, E, etc.)
-echo Available drives:
-
-:: [修复 1] 使用 findstr 过滤空行，并截取前两位消除不可见的回车符
+:: 列出可用磁盘
+echo 正在获取磁盘列表...
+echo --------------------------------------------------
 set counter=1
 for /f "tokens=1" %%a in ('wmic logicaldisk get name ^| findstr ":"') do (
     set "rawDrive=%%a"
@@ -20,54 +19,61 @@ for /f "tokens=1" %%a in ('wmic logicaldisk get name ^| findstr ":"') do (
     echo !counter!. !rawDrive:~0,2!
     set /a counter+=1
 )
+echo --------------------------------------------------
 
-:: Prompt user to choose a drive from the list
-set /p driveChoice=Enter the number of the drive you want to share (1, 2, 3, etc.): 
+:: 选择磁盘
+set /p driveChoice=请输入要共享的磁盘编号 (1, 2, 3...): 
 
-:: Check if the user input is valid
 set "driveLetter=!drive[%driveChoice%]!"
 if "%driveLetter%"=="" (
-    echo Invalid choice. Exiting...
+    echo [ERROR] 选择无效，脚本退出。
     pause
     exit /b
 )
 
-:: [修复 2] 移除末尾的斜杠，防止后续拼接出现双斜杠 (如 C:\\)
 set "folderPath=%driveLetter%"
 
-:: Check if the selected drive exists (Check the root directory)
-if not exist "%folderPath%\" (
-    echo Error: The specified drive does not exist: %folderPath%
-    pause
-    exit /b
-)
-
-:: [修复 3 & 4] 移除了危险的 SMB1 和无效的 SMB2 DISM 命令，并为 net stop 添加 /y 防止脚本卡住
-echo Restarting SMB Service to apply potential state changes...
+:: 重启 Server 服务 (可选，确保环境干净)
+echo 正在检查并重启共享服务...
 net stop "lanmanserver" /y >nul 2>&1
 net start "lanmanserver" >nul 2>&1
 
-:: Prompt the user to enter the name for the shared folder
-echo Please enter a name for the shared folder (e.g., Shared_Folder):
-set /p shareName=Share Name: 
+:: 设置共享名
+echo.
+set /p shareName=请输入共享文件夹名称 (例如: SharedFiles): 
 
-:: Create the shared folder (if it doesn't exist)
-if not exist "%folderPath%\%shareName%" (
-    echo Folder "%shareName%" does not exist. Creating it...
-    mkdir "%folderPath%\%shareName%"
+set "fullPath=%folderPath%\%shareName%"
+
+:: 1. 创建文件夹
+if not exist "%fullPath%" (
+    echo 正在创建文件夹: "%fullPath%"...
+    mkdir "%fullPath%"
 )
 
-:: Create the network share with the specified folder path and name
-:: 使用标准的 "共享名=绝对路径" 格式
-echo Sharing the folder...
-net share "%shareName%=%folderPath%\%shareName%" /GRANT:everyone,FULL
+:: 2. 设置 NTFS 权限 (关键步骤)
+:: /grant Everyone:(OI)(CI)F 表示：
+:: (OI) - 对象继承 (文件)
+:: (CI) - 容器继承 (子文件夹)
+:: F - 完全控制 (Full Control)
+echo 正在设置 NTFS 磁盘权限 (Everyone: 完全控制)...
+icacls "%fullPath%" /grant Everyone:(OI)(CI)F /t /q
 
-:: Confirmation that the folder has been shared
+:: 3. 创建网络共享
+echo 正在开启网络共享 (Everyone: 完全控制)...
+net share "%shareName%"="%fullPath%" /GRANT:everyone,FULL /REMARK:"Auto-shared by Script"
+
+:: 验证结果
+echo.
+echo --------------------------------------------------
 if %errorlevel% equ 0 (
-    echo Finished! The folder "%folderPath%\%shareName%" is now shared as "%shareName%".
+    echo 恭喜！共享设置成功。
+    echo 本地路径: %fullPath%
+    echo 网络路径: \\%COMPUTERNAME%\%shareName%
+    echo 权限状态: Everyone 已获得读取/写入/修改权限。
 ) else (
-    echo Failed to share the folder. Please check your system settings.
+    echo [ERROR] 共享失败，请检查该名称是否已被占用。
 )
+echo --------------------------------------------------
 
 pause
 ENDLOCAL
