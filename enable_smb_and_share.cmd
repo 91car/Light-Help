@@ -9,16 +9,31 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: List all drives and prompt user to select one
+:: List all available drives (C, D, E, etc.)
 echo Available drives:
 wmic logicaldisk get name
 
-:: Prompt the user to select a drive
-echo Please enter the letter of the drive you want to share (e.g., C, D, E):
-set /p driveLetter=Drive Letter: 
+:: Create a list for available drives
+set counter=1
+for /f "skip=1 tokens=1" %%a in ('wmic logicaldisk get name') do (
+    set drive[%counter%]=%%a
+    echo !counter!. %%a
+    set /a counter+=1
+)
+
+:: Prompt user to choose a drive from the list
+set /p driveChoice=Enter the number of the drive you want to share (1, 2, 3, etc.): 
+
+:: Check if the user input is valid
+set driveLetter=!drive[%driveChoice%]!
+if "%driveLetter%"=="" (
+    echo Invalid choice. Exiting...
+    pause
+    exit /b
+)
 
 :: Construct the full path to the selected drive
-set folderPath=%driveLetter%:\
+set folderPath=%driveLetter%\
 
 :: Check if the selected drive exists
 if not exist "%folderPath%" (
@@ -38,11 +53,17 @@ net start "lanmanserver"
 echo Please enter a name for the shared folder (e.g., "Shared_Folder"):
 set /p shareName=Share Name: 
 
+:: Create the shared folder (if it doesn't exist)
+if not exist "%folderPath%\%shareName%" (
+    echo Folder "%shareName%" does not exist. Creating it...
+    mkdir "%folderPath%\%shareName%"
+)
+
 :: Create the network share with the specified folder path and name
 echo Sharing the folder...
-net share "%shareName%"="%folderPath%" /GRANT:everyone,FULL
+net share "%shareName%"="%folderPath%\%shareName%" /GRANT:everyone,FULL
 
 :: Confirmation that the folder has been shared
-echo Finished! The folder "%folderPath%" is now shared as "%shareName%".
+echo Finished! The folder "%folderPath%\%shareName%" is now shared as "%shareName%".
 pause
 ENDLOCAL
