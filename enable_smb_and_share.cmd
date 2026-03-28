@@ -1,16 +1,16 @@
 @echo off
 SETLOCAL ENABLEDELAYEDEXPANSION
 
-:: 检查管理员权限
+:: Check if the script is running as Administrator
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERROR] 请以管理员身份运行此脚本。
+    echo [ERROR] Please run this script as Administrator.
     pause
     exit /b
 )
 
-:: 列出可用磁盘
-echo 正在获取磁盘列表...
+:: List all available drives (C:, D:, E:, etc.)
+echo Fetching drive list...
 echo --------------------------------------------------
 set counter=1
 for /f "tokens=1" %%a in ('wmic logicaldisk get name ^| findstr ":"') do (
@@ -21,57 +21,57 @@ for /f "tokens=1" %%a in ('wmic logicaldisk get name ^| findstr ":"') do (
 )
 echo --------------------------------------------------
 
-:: 选择磁盘
-set /p driveChoice=请输入要共享的磁盘编号 (1, 2, 3...): 
+:: Prompt user to choose a drive from the list
+set /p driveChoice=Enter the number of the drive you want to use (1, 2, 3, etc.): 
 
+:: Check if the user input is valid
 set "driveLetter=!drive[%driveChoice%]!"
 if "%driveLetter%"=="" (
-    echo [ERROR] 选择无效，脚本退出。
+    echo [ERROR] Invalid choice. Exiting...
     pause
     exit /b
 )
 
 set "folderPath=%driveLetter%"
 
-:: 重启 Server 服务 (可选，确保环境干净)
-echo 正在检查并重启共享服务...
+:: Restart the Server service to ensure environment consistency
+echo Checking and restarting SMB services...
 net stop "lanmanserver" /y >nul 2>&1
 net start "lanmanserver" >nul 2>&1
 
-:: 设置共享名
 echo.
-set /p shareName=请输入共享文件夹名称 (例如: SharedFiles): 
+:: Prompt the user to enter the name for the shared folder
+set /p shareName=Enter a name for the shared folder (e.g., Shared_Folder): 
 
 set "fullPath=%folderPath%\%shareName%"
 
-:: 1. 创建文件夹
+:: 1. Create the folder (if it doesn't exist)
 if not exist "%fullPath%" (
-    echo 正在创建文件夹: "%fullPath%"...
+    echo Creating folder: "%fullPath%"...
     mkdir "%fullPath%"
 )
 
-:: 2. 设置 NTFS 权限 (关键步骤)
-:: /grant Everyone:(OI)(CI)F 表示：
-:: (OI) - 对象继承 (文件)
-:: (CI) - 容器继承 (子文件夹)
-:: F - 完全控制 (Full Control)
-echo 正在设置 NTFS 磁盘权限 (Everyone: 完全控制)...
+:: 2. Set NTFS permissions (Everyone: Full Control)
+:: (OI) - Object Inherit (files)
+:: (CI) - Container Inherit (subfolders)
+:: F - Full Control
+echo Setting NTFS disk permissions (Everyone: Full Control)...
 icacls "%fullPath%" /grant Everyone:(OI)(CI)F /t /q
 
-:: 3. 创建网络共享
-echo 正在开启网络共享 (Everyone: 完全控制)...
+:: 3. Create the network share
+echo Enabling network share (Everyone: Full Control)...
 net share "%shareName%"="%fullPath%" /GRANT:everyone,FULL /REMARK:"Auto-shared by Script"
 
-:: 验证结果
+:: Validation and Results
 echo.
 echo --------------------------------------------------
 if %errorlevel% equ 0 (
-    echo 恭喜！共享设置成功。
-    echo 本地路径: %fullPath%
-    echo 网络路径: \\%COMPUTERNAME%\%shareName%
-    echo 权限状态: Everyone 已获得读取/写入/修改权限。
+    echo SUCCESS: The folder has been shared successfully.
+    echo Local Path:  %fullPath%
+    echo Network Path: \\%COMPUTERNAME%\%shareName%
+    echo Permissions: Everyone has been granted Read/Write/Modify access.
 ) else (
-    echo [ERROR] 共享失败，请检查该名称是否已被占用。
+    echo [ERROR] Sharing failed. Please check if the share name is already in use.
 )
 echo --------------------------------------------------
 
