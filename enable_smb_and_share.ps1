@@ -1,23 +1,47 @@
-# 1. 启用SMB功能
-Enable-WindowsOptionalFeature -Online -FeatureName smb1protocol -All -NoRestart
-Enable-WindowsOptionalFeature -Online -FeatureName FS-SMB1 -All -NoRestart
-Start-Service -Name "LanmanServer"
+$ErrorActionPreference = "Stop"
 
-# 2. 创建一个名为iphone的共享文件夹
-$folderPath = "C:\iphone"  # 你可以修改文件夹路径
-if (-not (Test-Path -Path $folderPath)) {
-    New-Item -Path $folderPath -ItemType Directory
+# Enable TLSv1.2 for compatibility with older clients
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+
+# 提示用户输入共享文件夹路径
+$folderPath = Read-Host "请输入要共享的文件夹路径（例如：C:\Users\YourUser\Documents\iphone）"
+
+# 验证路径是否存在
+if (-not (Test-Path $folderPath)) {
+    Write-Host "错误：指定的路径不存在！"
+    exit
 }
 
-# 3. 设置共享文件夹
-$shareName = "iphone"  # 共享名
-New-SmbShare -Name $shareName -Path $folderPath -FullAccess "Everyone"
+# 随机生成文件名
+$rand = Get-Random -Maximum 99999999
 
-# 4. 设置共享权限
-$acl = Get-Acl -Path $folderPath
-$permission = "Everyone","FullControl","Allow"
-$rule = New-Object System.Security.AccessControl.FileSystemAccessRule($permission[0], $permission[1], "ContainerInherit, ObjectInherit", "None", "Allow")
-$acl.AddAccessRule($rule)
-Set-Acl -Path $folderPath -AclObject $acl
+# 检查管理员权限
+$isAdmin = [bool]([Security.Principal.WindowsIdentity]::GetCurrent().Groups -match 'S-1-5-32-544')
 
-Write-Host "SMB已启用，'iphone' 文件夹已共享！"
+# 设置临时文件路径
+$FilePath = if ($isAdmin) { "$env:SystemRoot\Temp\SMB_Share_$rand.cmd" } else { "$env:TEMP\SMB_Share_$rand.cmd" }
+
+# 下载批处理脚本
+$DownloadURL = 'https://raw.githubusercontent.com/yourusername/yourrepository/main/enable_smb_and_share.cmd'
+
+try {
+    $response = Invoke-WebRequest -Uri $DownloadURL -UseBasicParsing
+}
+catch {
+    Write-Host "下载失败，检查 URL 或网络连接"
+    exit
+}
+
+# 将文件夹路径替换到 CMD 脚本内容中
+$content = $response.Content -replace "{FOLDER_PATH}", $folderPath
+
+# 创建临时 .CMD 文件
+Set-Content -Path $FilePath -Value $content
+
+# 执行 .CMD 文件
+Start-Process $FilePath -Wait
+
+# 删除临时文件
+Remove-Item $FilePath -Force
+
+Write-Host "SMB 和共享设置已成功完成！"
