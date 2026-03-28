@@ -1,50 +1,43 @@
 @echo off
-:: 强制使用 UTF-8 环境
-chcp 65001 >nul
 SETLOCAL ENABLEDELAYEDEXPANSION
 
-:: 自动请求管理员权限
+:: 1. Auto-Elevate to Administrator
 %1 mshta vbscript:CreateObject("Shell.Application").ShellExecute("cmd.exe","/c %~s0 ::","","runas",1)(window.close)&&exit
 cd /d "%~dp0"
 
-:: --- 核心信息定义（为了防乱码，这里使用变量保护） ---
-set "NAME=光速分享"
-set "YT=www.youtube.com/@光速分享"
-set "GH=github.com/Cotton059/Light-Help"
+:: 2. Meta Data (Safe to edit in GitHub)
+set "APP_NAME=SMB 1.0 ONE-CLICK DEPLOY TOOL"
+set "AUTHOR=Light Speed Share (GSFX)"
+set "PROJECT=github.com/Cotton059/Light-Help"
 
-title SMB 1.0 Share Tool
-mode con cols=95 lines=32
+title %APP_NAME%
+mode con cols=90 lines=30
 color 0F
 
 :MainMenu
 cls
 echo.
-echo   =======================================================================================
-echo   #                 S M B   1 . 0   Quick Share Tool (CMD Version)                      #
-echo   =======================================================================================
-echo.
-:: 这里直接输出，不再使用复杂的边框嵌套中文
-echo   [ Auth ] : %NAME%
-echo   [ Home ] : %YT%
-echo   [ Project ] : %GH%
-echo.
-echo   [ Info ] : 正在开启 SMB 1.0 协议并配置 Everyone 匿名共享权限...
-echo   ---------------------------------------------------------------------------------------
+echo   =====================================================================================
+echo   #                 %APP_NAME%
+echo   =====================================================================================
+echo   [  Func  ] : Enable SMB 1.0, Create Folder ^& Set Everyone Permissions
+echo   [ Author ] : %AUTHOR%
+echo   [ Project] : %PROJECT%
+echo   -------------------------------------------------------------------------------------
 echo.
 
-:: --- 权限检测 ---
+:: --- Check Privileges ---
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     color 0C
-    echo   [!] Error: Please run as Administrator!
-    echo       错误：请使用管理员权限运行！
+    echo   [!] ERROR: Please run this script as ADMINISTRATOR.
     pause
     exit /b
 )
 
-:: --- 磁盘扫描 ---
-echo   [+] Scanning Drives... 正在获取可用驱动器...
-echo   ---------------------------------------------------------------------------------------
+:: --- Scan Drives ---
+echo   [+] Scanning available drives...
+echo   -------------------------------------------------------------------------------------
 set counter=1
 for /f "skip=1 tokens=1" %%a in ('wmic logicaldisk get name') do (
     set "item=%%a"
@@ -54,62 +47,67 @@ for /f "skip=1 tokens=1" %%a in ('wmic logicaldisk get name') do (
         set /a counter+=1
     )
 )
-echo   ---------------------------------------------------------------------------------------
+echo   -------------------------------------------------------------------------------------
 echo.
 
-set /p driveChoice="   [?] Select Drive Number 请输入数字编号 (1, 2, 3...): "
+:: --- User Interaction ---
+set /p driveChoice="   [?] Select Drive Number (1, 2, 3...): "
 set "driveLetter=!drive[%driveChoice%]!"
 
 if "!driveLetter!"=="" (
     color 0C
-    echo   [!] Invalid Choice. 无效输入。
+    echo   [!] ERROR: Invalid choice. Exiting...
     timeout /t 3 >nul
     exit /b
 )
 
-set /p shareName="   [?] Share Name 请输入共享名称 (e.g. MyShare): "
+echo.
+set /p shareName="   [?] Enter Share Name (e.g., MyFiles): "
 set "fullPath=!driveLetter!\!shareName!"
 
-:: --- 执行逻辑 ---
+:: --- Execution Logic ---
 cls
 echo.
-echo   =======================================================================================
-echo   Processing... Please wait 1-3 minutes. 正在部署，请稍候...
-echo   =======================================================================================
-echo.
+echo   [ RUNNING ] Deploying configurations, please wait...
+echo   -------------------------------------------------------------------------------------
 
-echo   [1/4] Enabling SMB 1.0... 正在启用协议...
+:: 1. Enable Feature
+echo   - Step 1: Enabling SMB 1.0 Protocol (This may take 1-3 mins)...
 dism /online /enable-feature /featurename:SMB1Protocol /all /norestart >nul
 
-echo   [2/4] Restarting Services... 正在重启服务...
+:: 2. Restart SMB Service
+echo   - Step 2: Restarting Server Services...
 net stop "lanmanserver" /y >nul 2>&1
 net start "lanmanserver" >nul 2>&1
 
+:: 3. Create Folder & Set Permissions
 if not exist "!fullPath!" (
-    echo   [3/4] Creating Folder... 正在创建文件夹: !fullPath!
+    echo   - Step 3: Creating directory: !fullPath!
     mkdir "!fullPath!"
 )
-echo         Configuring NTFS Permissions... 正在配置权限...
+echo   - Step 4: Setting NTFS Permissions (Everyone: Full Control)...
 icacls "!fullPath!" /grant Everyone:(OI)(CI)F /t /q >nul
 
-echo   [4/4] Activating Share... 正在开启网络共享...
+:: 4. Apply Network Share
+echo   - Step 5: Activating Network Share...
 net share "!shareName!"="!fullPath!" /GRANT:everyone,FULL /REMARK:"Auto-shared" >nul
 
-:: --- 结果展示 ---
+:: --- Result Presentation ---
 echo.
-echo   =======================================================================================
+echo   =====================================================================================
 if %errorlevel% equ 0 (
     color 0A
-    echo   [ SUCCESS ] Done! 部署成功！
-    echo   ---------------------------------------------------------------------------------------
-    echo     - Path 访问路径: \\%COMPUTERNAME%\!shareName!
-    echo     - Local 物理路径: !fullPath!
-    echo   ---------------------------------------------------------------------------------------
-    echo     * 提示: 如果是首次开启，请重启电脑以生效。
+    echo   [ SUCCESS ] Configuration completed successfully!
+    echo   -------------------------------------------------------------------------------------
+    echo     * Network Path : \\%COMPUTERNAME%\!shareName!
+    echo     * Local Path   : !fullPath!
+    echo   -------------------------------------------------------------------------------------
+    echo     * NOTE: Please REBOOT your computer to apply changes.
 ) else (
     color 0C
-    echo   [ FAILED ] 部署失败，请检查名称是否冲突。
+    echo   [ FAILED ] An error occurred during deployment.
 )
-echo   =======================================================================================
+echo   =====================================================================================
 echo.
-pause
+echo   Press any key to exit...
+pause >nul
