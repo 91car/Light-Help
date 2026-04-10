@@ -1,3 +1,7 @@
+# Select Language
+[![en](https://img.shields.io/badge/lang-en-red.svg)](README_en.md)
+[![zh-cn](https://img.shields.io/badge/lang-zh--cn-blue.svg)](README.md)
+---
 # 🚀 光速分享 (Light-Help)
 ### 帮助观众远程完成一些复杂的 PC 操作,请认准光速分享官方频道
 
