@@ -15,20 +15,6 @@
 > 🔗 [访问我的 Bilibili 主页](https://space.bilibili.com/392977516)
 
 ---
-**光速分享视频：** [一行代码深度清理 Windows！无需安装软件，一键释放巨量系统空间](https://youtu.be/EPpgy2S_9lg)  
-*（帮助项目，观看用户专用）*
-
-<a href="https://youtu.be/EPpgy2S_9lg" target="_blank">
-  <img src="https://github.com/user-attachments/assets/0f8dfba7-0979-4405-9e84-a432d2ec9257" width="320" alt="视频封面图" />
-</a>
-
-## 💻 快速开始 (Windows + X)
-在 **PowerShell 管理员模式** 中运行以下命令：运行Light-Help,一键清理命令
-
-```powershell
-iwr -useb https://raw.githubusercontent.com/Cotton059/Light-Help/main/DeepClean_Tool.ps1 | iex
-```
----
 **光速分享视频：** [免费家庭影院搭建教程｜无需NAS，一台电脑实现自动海报墙 + 全设备播放](https://youtu.be/EPpgy2S_9lg)  
 *（帮助项目，观看用户专用）*
 
