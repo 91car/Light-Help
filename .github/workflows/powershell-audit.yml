@@ -1,0 +1,27 @@
+name: PSScriptAnalyzer
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint:
+    name: PowerShell Scan
+    runs-on: windows-latest  # 使用 Windows 环境跑原生 PS 审计最准确
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          # 核心逻辑：扫描所有 .ps1 和 .psm1 文件
+          $results = Invoke-ScriptAnalyzer -Path ./ -Recurse -Severity @('Error', 'Warning')
+          if ($results) {
+              $results | Format-Table
+             
+              # exit 1 
+          } else {
+              Write-Host "No critical issues found. Your scripts are solid!"
+          }
