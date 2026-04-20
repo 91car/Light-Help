@@ -32,9 +32,19 @@
 ## 💻 快速开始 (Windows + X)
 在 **PowerShell 管理员模式** 中运行以下命令：运行Light-Help,一键清理命令
 
+### ☢️ 极致清理版
+> **警告：** 清空所有用户级缓存，可能导致部分云服务软件需要重新同步到本地
 ```powershell
+
 iwr -useb https://raw.githubusercontent.com/Cotton059/Light-Help/main/DeepClean_Tool.ps1 | iex
 ```
+### 🛡️ v8.0 平衡保护版
+> **提示：** 在释放空间的同时，提供智能数据隔离保护，如果您不喜欢极客风格，可以使用它
+```powershell
+
+iwr -useb https://raw.githubusercontent.com/Cotton059/Light-Help/main/DeepClean_v8.0_Tool.ps1 | iex
+```
+
 ---
 **光速分享视频：** [免费家庭影院搭建教程｜无需NAS，一台电脑实现自动海报墙 + 全设备播放](https://youtu.be/EPpgy2S_9lg)  
 *（帮助项目，观看用户专用）*
