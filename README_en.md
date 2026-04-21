@@ -16,9 +16,14 @@
 ### Please review the code at the top of the project before running. It is open, transparent, and subject to public scrutiny, so you can use it with confidence.
 ### This project's scripts are exclusively for use with YouTube Lightspeed Sharing videos.
 ---
-> **Please Subscribe to Lightspeed Sharing**
-> I will continue to bring you more convenient and better tech videos.  
-> 🔗 [Visit my YouTube Channel](https://www.youtube.com/@光速分享)  
+
+
+### 🙋‍♂️ Help Shape This Channel
+> **Please subscribe to Lightspeed Sharing (YT)**
+> **💡 Community Perks:** Unlock the power to vote in my community posts or submit custom service requests. Let everything here be decided by you!
+>
+> 🔗 [Visit my YouTube Channel](https://www.youtube.com/@光速分享)
+
 
 ---
 
